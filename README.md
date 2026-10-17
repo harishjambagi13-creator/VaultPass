@@ -38,12 +38,7 @@ It provides a modern dashboard for managing website credentials, generating stro
 | HKDF | Cryptographic key separation |
 | Windows DPAPI | Protection of the authentication verifier on Windows |
 
-## 📸 Application Preview
 
-<!-- Add your dashboard screenshot to screenshots/vaultpass-dashboard.png -->
-![VaultPass Dashboard](screenshots/vaultpass-dashboard.png)
-
-*Add the screenshot file at the path shown above for the image to appear.*
 
 ## 📂 Project Structure
 
