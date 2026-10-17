@@ -1,0 +1,7 @@
+venv/
+__pycache__/
+*.py[cod]
+vaultpass.sqlite3
+vaultpass.sqlite3-*
+
+passs.txt
