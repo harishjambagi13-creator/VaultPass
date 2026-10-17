@@ -168,6 +168,16 @@ VaultPass is a local-development project, not a production-ready hosted password
 - The server cannot inspect credential fields because it intentionally receives encrypted records.
 
 **A working authentication flow does not guarantee that the complete system is secure. Review and test the cryptographic implementation before storing real credentials.**
+## Screenshots
+
+### VaultPass Front Page
+![VaultPass Front Page](screenshots/vaultpass-frontpage.png)
+
+### VaultPass Dashboard
+![VaultPass Dashboard](screenshots/vaultpass%20-dashboard.png)
+
+### Password Vault
+![Password Vault](screenshots/passwordvault.png)
 
 ## 🚧 Future Improvements
 
