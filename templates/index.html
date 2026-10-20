@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#0b1120">
+    <meta name="theme-color" content="#080D18">
+    <meta name="description" content="VaultPass — a private, local-first password vault with AES-256-GCM encrypted credentials.">
     <title>VaultPass — Your private vault</title>
+    <link rel="icon" href="{{ url_for('static', path='/images/favicon.svg') }}" type="image/svg+xml">
+    <link rel="preload" href="{{ url_for('static', path='/fonts/inter-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
     <script src="{{ url_for('static', path='/js/app.js') }}" defer></script>
 </head>
@@ -12,17 +15,23 @@
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
     <main id="auth-screen" class="auth-screen">
+        <div class="auth-aurora" aria-hidden="true"></div>
         <section class="auth-card">
             <a class="brand brand-centered" href="/" aria-label="VaultPass home">
-                <span class="brand-mark" aria-hidden="true">V</span>
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 64 64" role="presentation">
+                        <path d="M32 6 52 14v17c0 12.5-8.2 23.1-20 27-11.8-3.9-20-14.5-20-27V14l20-8Z"/>
+                        <path d="m23 32 7 7 12-14"/>
+                    </svg>
+                </span>
                 <span>Vault<span class="brand-light">Pass</span></span>
             </a>
             <div class="auth-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2Zm6 4v3"/></svg>
             </div>
             <p class="eyebrow">YOUR PRIVATE SPACE</p>
-            <h1 id="auth-title">{{ "Unlock your vault" if configured else "Create your vault" }}</h1>
-            <p id="auth-description" class="muted">{{ "Your passwords are encrypted and only available after you unlock your vault." if configured else "Choose a strong master password to create your encrypted local vault." }}</p>
+            <h1 id="auth-title">One vault. Every password. Peace of mind.</h1>
+            <p id="auth-description" class="muted">{{ "Keep your credentials protected in one secure place with a clean, local-first vault experience." if configured else "Keep your digital credentials organized in one place with a security-focused password manager built for privacy." }}</p>
             <div id="auth-form" class="auth-form" role="form" aria-labelledby="auth-title">
                 <label for="master-password">Master password</label>
                 <div class="password-input-wrap">
@@ -39,115 +48,658 @@
 
     <div id="app-shell" class="app-shell hidden">
         <aside id="sidebar" class="sidebar">
-            <a class="brand" href="#" data-view="overview" aria-label="VaultPass dashboard">
-                <span class="brand-mark" aria-hidden="true">V</span>
-                <span>Vault<span class="brand-light">Pass</span></span>
-            </a>
-            <div class="sidebar-label">WORKSPACE</div>
+            <div class="sidebar-head">
+                <a class="brand" href="#" data-view="overview" aria-label="VaultPass dashboard">
+                    <span class="brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 64 64" role="presentation">
+                            <path d="M32 6 52 14v17c0 12.5-8.2 23.1-20 27-11.8-3.9-20-14.5-20-27V14l20-8Z"/>
+                            <path d="m23 32 7 7 12-14"/>
+                        </svg>
+                    </span>
+                    <span>Vault<span class="brand-light">Pass</span></span>
+                </a>
+                <button id="sidebar-close" class="icon-button sidebar-close" type="button" aria-label="Close navigation">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                </button>
+            </div>
+
             <nav class="primary-nav" aria-label="Main navigation">
+                <p class="sidebar-label">Workspace</p>
                 <button class="nav-item active" type="button" data-view="overview">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
-                    Overview
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg>
+                    <span class="nav-text">Overview</span>
                 </button>
-                <button class="nav-item" type="button" data-view="vault">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 5v2"/></svg>
-                    Password vault <span id="nav-count" class="nav-count">0</span>
+                <button class="nav-item" type="button" data-view="credentials">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 5v2"/></svg>
+                    <span class="nav-text">All credentials</span>
+                    <span id="nav-count" class="nav-count">0</span>
                 </button>
+                <button class="nav-item" type="button" data-view="favorites">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9L12 3.6Z"/></svg>
+                    <span class="nav-text">Favorites</span>
+                    <span id="nav-favorites" class="nav-count">0</span>
+                </button>
+
+                <p class="sidebar-label sidebar-label-spaced">Tools</p>
                 <button class="nav-item" type="button" data-view="generator">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Zm7 13 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"/></svg>
-                    Password generator
+                    <span class="nav-text">Password generator</span>
+                </button>
+                <button class="nav-item" type="button" data-view="security">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5.6c0 4.6-3.2 8.3-8 9.9-4.8-1.6-8-5.3-8-9.9V6l8-3Z"/><path d="m9 12 2.2 2.2L15.4 10"/></svg>
+                    <span class="nav-text">Security center</span>
+                </button>
+                <button class="nav-item" type="button" data-view="settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+                    <span class="nav-text">Settings</span>
                 </button>
             </nav>
+
             <div class="sidebar-bottom">
                 <div class="encryption-note">
-                    <span class="note-lock" aria-hidden="true">◇</span>
-                    <div><strong>Your vault is private</strong><span>Encrypted with your master password</span></div>
+                    <span class="note-lock" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3m-4 5v2"/></svg>
+                    </span>
+                    <div>
+                        <strong>Vault encrypted</strong>
+                        <span>AES-256-GCM · stored on this device</span>
+                    </div>
                 </div>
-                <button id="lock-button" class="nav-item lock-nav" type="button">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
-                    Lock vault
+                <button id="lock-button" class="nav-item signout-item" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 8 6 12l4 4M6 12h10"/></svg>
+                    <span class="nav-text">Sign out</span>
                 </button>
-                <div class="user-chip"><span class="user-avatar">V</span><span><strong>Personal vault</strong><small>Local account</small></span><span class="online-dot" title="Vault unlocked"></span></div>
+                <div class="user-chip">
+                    <span class="user-avatar">V</span>
+                    <span class="user-chip-text">
+                        <strong>Personal vault</strong>
+                        <small>Local account</small>
+                    </span>
+                    <span class="online-dot" title="Vault unlocked"></span>
+                </div>
             </div>
         </aside>
+        <button id="sidebar-scrim" class="sidebar-scrim" type="button" aria-label="Close navigation" tabindex="-1"></button>
 
         <section class="main-panel">
             <header class="topbar">
-                <button id="mobile-menu" class="icon-button mobile-menu" type="button" aria-label="Toggle navigation">☰</button>
-                <div class="breadcrumbs"><span>Workspace</span><span class="crumb-slash">/</span><strong id="page-crumb">Overview</strong></div>
-                <div class="topbar-right"><span class="secure-label"><span class="status-dot"></span> Secure session</span><span class="top-avatar">V</span></div>
+                <button id="mobile-menu" class="icon-button mobile-menu" type="button" aria-label="Open navigation" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+                </button>
+                <div class="search-box topbar-search">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+                    <input id="global-search" type="search" placeholder="Search your vault…" autocomplete="off" aria-label="Search credentials">
+                    <button id="clear-search" class="search-clear hidden" type="button" aria-label="Clear search">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <div class="topbar-right">
+                    <button class="button button-primary topbar-add" type="button" data-add-credential>
+                        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        <span class="button-label">Add credential</span>
+                    </button>
+                    <div class="profile-wrap">
+                        <button id="profile-button" class="profile-button" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+                            <span class="top-avatar">V</span>
+                            <svg class="profile-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        <div id="profile-menu" class="profile-menu hidden" role="menu">
+                            <div class="profile-menu-head">
+                                <span class="top-avatar">V</span>
+                                <span>
+                                    <strong>Personal vault</strong>
+                                    <small>Single-user local vault</small>
+                                </span>
+                            </div>
+                            <div class="profile-session">
+                                <span>Session expires in</span>
+                                <strong id="session-timer">--:--</strong>
+                            </div>
+                            <button class="profile-action" type="button" data-view="settings" role="menuitem">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+                                Settings
+                            </button>
+                            <button id="profile-lock" class="profile-action danger" type="button" role="menuitem">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
+                                Lock vault
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </header>
+
             <main class="content">
+                <!-- OVERVIEW / DASHBOARD -->
                 <section id="overview-view" class="page-view">
-                    <div class="page-heading">
-                        <div><p class="eyebrow">YOUR PASSWORDS, ORGANIZED</p><h1>Good to see you <span class="wave">✦</span></h1><p class="muted">A clear view of what matters. Your vault is ready when you are.</p></div>
-                        <button class="button button-primary" type="button" data-add-credential><span class="plus">+</span> Add password</button>
-                    </div>
-                    <div class="summary-grid">
-                        <article class="summary-card">
-                            <div class="summary-icon icon-blue"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg></div>
-                            <span class="summary-caption">SAVED PASSWORDS</span><strong id="total-count" class="summary-value">0</strong><span class="summary-foot">Encrypted and stored locally</span>
-                        </article>
-                        <article class="summary-card">
-                            <div class="summary-icon icon-green"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></div>
-                            <span class="summary-caption">VAULT STATUS</span><strong class="summary-status">Protected</strong><span class="summary-foot"><span class="status-dot"></span> Only you can unlock it</span>
-                        </article>
-                        <article class="summary-card">
-                            <div class="summary-icon icon-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg></div>
-                            <span class="summary-caption">PASSWORD TOOLS</span><strong class="summary-status">Generator</strong><button class="text-link summary-link" data-view="generator" type="button">Create a strong password <span>→</span></button>
-                        </article>
-                    </div>
-                    <section class="vault-panel">
-                        <div class="section-heading"><div><h2>Recently saved</h2><p class="muted">Your credentials, all in one place.</p></div><button class="text-link" type="button" data-view="vault">View all <span>→</span></button></div>
-                        <div id="recent-list"></div>
+                    <section class="hero">
+                        <div class="hero-grid">
+                            <div class="hero-copy">
+                                <p class="eyebrow hero-eyebrow"><span class="hero-pulse" aria-hidden="true"></span>Vault unlocked · End-to-end encrypted</p>
+                                <h1 class="hero-title">Your digital life.<br><span>One secure vault.</span></h1>
+                                <p class="hero-sub">Everything important, protected in one beautifully simple place.</p>
+                                <div class="hero-actions">
+                                    <button id="hero-primary" class="button button-primary" type="button" data-add-credential>
+                                        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                        <span id="hero-primary-label">Add your first credential</span>
+                                    </button>
+                                    <button class="button button-ghost" type="button" data-view="credentials">
+                                        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
+                                        Open the vault
+                                    </button>
+                                </div>
+                                <ul class="hero-trust">
+                                    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2Z"/></svg>AES-256-GCM at rest</li>
+                                    <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5.6c0 4.6-3.2 8.3-8 9.9-4.8-1.6-8-5.3-8-9.9V6l8-3Z"/></svg>Nothing leaves this device</li>
+                                </ul>
+                            </div>
+                            <div class="hero-visual" aria-hidden="true">
+                                <svg class="vault-illustration" viewBox="0 0 320 320" role="presentation">
+                                    <defs>
+                                        <linearGradient id="vaultRing" x1="0" y1="0" x2="1" y2="1">
+                                            <stop offset="0" stop-color="#8FC0FF" stop-opacity=".85"/>
+                                            <stop offset=".55" stop-color="#528BFF" stop-opacity=".25"/>
+                                            <stop offset="1" stop-color="#38D9C8" stop-opacity=".7"/>
+                                        </linearGradient>
+                                        <linearGradient id="vaultCore" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0" stop-color="#16243A"/>
+                                            <stop offset="1" stop-color="#0B1220"/>
+                                        </linearGradient>
+                                        <radialGradient id="vaultHalo" cx="50%" cy="46%" r="52%">
+                                            <stop offset="0" stop-color="#528BFF" stop-opacity=".38"/>
+                                            <stop offset="1" stop-color="#528BFF" stop-opacity="0"/>
+                                        </radialGradient>
+                                    </defs>
+                                    <circle cx="160" cy="150" r="150" fill="url(#vaultHalo)"/>
+                                    <g fill="none" stroke="url(#vaultRing)">
+                                        <circle cx="160" cy="150" r="128" stroke-width="1" opacity=".45"/>
+                                        <circle cx="160" cy="150" r="104" stroke-width="1.4" opacity=".7"/>
+                                        <circle cx="160" cy="150" r="80" stroke-width="2" opacity=".9"/>
+                                    </g>
+                                    <g stroke="#7FA8FF" stroke-width="1" opacity=".4">
+                                        <path d="M160 22v34M160 244v34M32 150h34M254 150h34"/>
+                                        <path d="M70 60 93 83M227 217l23 23M250 60l-23 23M93 217l-23 23"/>
+                                    </g>
+                                    <circle cx="160" cy="150" r="58" fill="url(#vaultCore)" stroke="url(#vaultRing)" stroke-width="1.6"/>
+                                    <path d="M160 106 194 118v20c0 18-13 31-34 37-21-6-34-19-34-37v-20l34-12Z" fill="none" stroke="url(#vaultRing)" stroke-width="2.4" stroke-linejoin="round"/>
+                                    <path d="m146 148 11 11 20-23" fill="none" stroke="#38D9C8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <g class="vault-orbit" fill="#8FC0FF">
+                                        <circle cx="160" cy="22" r="3.4" opacity=".9"/>
+                                        <circle cx="278" cy="150" r="2.4" opacity=".6"/>
+                                        <circle cx="42" cy="150" r="2.4" opacity=".6"/>
+                                    </g>
+                                </svg>
+                            </div>
+                        </div>
                     </section>
-                    <div class="privacy-banner"><span class="privacy-icon">✳</span><div><strong>Privacy is built in.</strong><span>Your vault is encrypted with a key derived from your master password. Stored records are unreadable without it.</span></div></div>
+
+                    <section class="metric-grid" aria-label="Vault summary">
+                        <article class="metric-card metric-blue">
+                            <div class="metric-head">
+                                <span class="metric-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
+                                </span>
+                                <span class="metric-caption">Saved credentials</span>
+                            </div>
+                            <strong id="total-count" class="metric-value">0</strong>
+                            <span class="metric-foot">Encrypted and stored on this device</span>
+                        </article>
+                        <article class="metric-card metric-cyan">
+                            <div class="metric-head">
+                                <span class="metric-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9L12 3.6Z"/></svg>
+                                </span>
+                                <span class="metric-caption">Favorites</span>
+                            </div>
+                            <strong id="favorite-count" class="metric-value">0</strong>
+                            <span class="metric-foot">Pinned for one-tap access</span>
+                        </article>
+                        <article class="metric-card metric-violet">
+                            <div class="metric-head">
+                                <span class="metric-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h6l2 3h8v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z"/><circle cx="15.5" cy="14" r="1.2"/></svg>
+                                </span>
+                                <span class="metric-caption">Categories</span>
+                            </div>
+                            <strong id="category-count" class="metric-value">0</strong>
+                            <span class="metric-foot">Distinct groups in your vault</span>
+                        </article>
+                        <article class="metric-card metric-green">
+                            <div class="metric-head">
+                                <span class="metric-icon">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5.6c0 4.6-3.2 8.3-8 9.9-4.8-1.6-8-5.3-8-9.9V6l8-3Z"/><path d="m9 12 2.2 2.2L15.4 10"/></svg>
+                                </span>
+                                <span class="metric-caption">Strong passwords</span>
+                            </div>
+                            <strong id="strong-count" class="metric-value">0</strong>
+                            <span id="strong-foot" class="metric-foot">16+ characters with mixed classes</span>
+                        </article>
+                    </section>
+
+                    <section class="panel recent-panel">
+                        <div class="panel-heading">
+                            <div>
+                                <h2>Recently added</h2>
+                                <p class="muted">Your newest credentials, decrypted locally in this tab.</p>
+                            </div>
+                            <button class="text-link" type="button" data-view="credentials">View all <span aria-hidden="true">→</span></button>
+                        </div>
+                        <div id="recent-list" class="recent-grid"></div>
+                        <div id="recent-empty" class="empty-state hidden">
+                            <span class="empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
+                            </span>
+                            <h3 id="recent-empty-title">Your vault is ready for its first secret</h3>
+                            <p id="recent-empty-text">Add a credential and it will appear here, encrypted and retrievable in seconds.</p>
+                            <button id="recent-empty-action" class="button button-primary" type="button" data-add-credential>Add your first credential</button>
+                        </div>
+                    </section>
+
+                    <section class="insight-grid">
+                        <article class="insight-card privacy-card">
+                            <span class="insight-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M12 3 20 6v5.6c0 4.6-3.2 8.3-8 9.9-4.8-1.6-8-5.3-8-9.9V6l8-3Z"/></svg>
+                            </span>
+                            <div>
+                                <h3>Privacy is built in</h3>
+                                <p>Records are encrypted in your browser with AES-256-GCM. The server only ever stores ciphertext it cannot read.</p>
+                            </div>
+                        </article>
+                        <article class="insight-card security-card">
+                            <span class="insight-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M3 17l5-5 3.5 3.5L21 6"/><path d="M15 6h6v6"/></svg>
+                            </span>
+                            <div>
+                                <h3>Security snapshot</h3>
+                                <p id="security-snapshot">Add a few credentials and VaultPass will analyse them for weak and reused passwords.</p>
+                                <button class="text-link" type="button" data-view="security">Open security center <span aria-hidden="true">→</span></button>
+                            </div>
+                        </article>
+                    </section>
                 </section>
 
-                <section id="vault-view" class="page-view hidden">
+                <!-- ALL CREDENTIALS -->
+                <section id="credentials-view" class="page-view hidden">
                     <div class="page-heading">
-                        <div><p class="eyebrow">YOUR PRIVATE COLLECTION</p><h1>Password vault</h1><p class="muted">Search, view, and manage your saved credentials.</p></div>
-                        <button class="button button-primary" type="button" data-add-credential><span class="plus">+</span> Add password</button>
+                        <div>
+                            <p class="eyebrow">Your private collection</p>
+                            <h1>All credentials</h1>
+                            <p class="muted">Search, filter, sort and manage every record in your vault.</p>
+                        </div>
+                        <button class="button button-primary" type="button" data-add-credential>
+                            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            Add credential
+                        </button>
                     </div>
-                    <div class="vault-panel full-vault">
-                        <div class="vault-toolbar"><div class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="search-input" type="search" placeholder="Search websites or usernames…" autocomplete="off" aria-label="Search credentials"></div><span id="result-count" class="result-count"></span></div>
-                        <div id="table-scroll" class="table-scroll"><table class="credential-table"><thead><tr><th>WEBSITE</th><th>USERNAME</th><th>PASSWORD</th><th>UPDATED</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody id="credential-rows"></tbody></table></div>
-                        <div id="vault-empty" class="empty-state hidden"><span class="empty-icon">◇</span><h3>Your vault is ready</h3><p>Add your first credential to keep everything organized.</p><button class="button button-primary" type="button" data-add-credential><span class="plus">+</span> Add password</button></div>
-                        <div id="search-empty" class="empty-state hidden"><h3>No matching credentials</h3><p>Try another website or username.</p></div>
-                    </div>
+                    <section class="panel vault-panel">
+                        <div class="vault-toolbar">
+                            <div class="toolbar-group">
+                                <label class="field-select">
+                                    <span class="visually-hidden">Filter by category</span>
+                                    <select id="category-filter">
+                                        <option value="all">All categories</option>
+                                    </select>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                                </label>
+                                <label class="field-select">
+                                    <span class="visually-hidden">Sort credentials</span>
+                                    <select id="sort-select">
+                                        <option value="updated">Recently updated</option>
+                                        <option value="created">Recently added</option>
+                                        <option value="name">Name (A–Z)</option>
+                                        <option value="category">Category</option>
+                                    </select>
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                                </label>
+                            </div>
+                            <span id="result-count" class="result-count">0 items</span>
+                        </div>
+                        <div id="table-scroll" class="table-scroll">
+                            <table class="credential-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Website</th>
+                                        <th scope="col">Username</th>
+                                        <th scope="col">Password</th>
+                                        <th scope="col">Category</th>
+                                        <th scope="col">Updated</th>
+                                        <th scope="col"><span class="visually-hidden">Actions</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="credential-rows"></tbody>
+                            </table>
+                        </div>
+                        <div id="vault-empty" class="empty-state hidden">
+                            <span class="empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
+                            </span>
+                            <h3>Your vault is ready</h3>
+                            <p>Add your first credential to keep everything organised and protected.</p>
+                            <button class="button button-primary" type="button" data-add-credential>Add credential</button>
+                        </div>
+                        <div id="search-empty" class="empty-state hidden">
+                            <span class="empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+                            </span>
+                            <h3>No matching credentials</h3>
+                            <p>Try a different website, username, or category.</p>
+                        </div>
+                    </section>
                 </section>
 
+                <!-- FAVORITES -->
+                <section id="favorites-view" class="page-view hidden">
+                    <div class="page-heading">
+                        <div>
+                            <p class="eyebrow">Quick access</p>
+                            <h1>Favorites</h1>
+                            <p class="muted">Credentials you have pinned for one-tap access.</p>
+                        </div>
+                        <button class="button button-primary" type="button" data-add-credential>
+                            <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            Add credential
+                        </button>
+                    </div>
+                    <section class="panel">
+                        <div id="favorites-list" class="recent-grid"></div>
+                        <div id="favorites-empty" class="empty-state hidden">
+                            <span class="empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="m12 3.6 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9L12 3.6Z"/></svg>
+                            </span>
+                            <h3>No favorites yet</h3>
+                            <p>Tap the star on any credential to pin it here.</p>
+                            <button class="button button-secondary" type="button" data-view="credentials">Browse all credentials</button>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- PASSWORD GENERATOR -->
                 <section id="generator-view" class="page-view hidden">
-                    <div class="page-heading"><div><p class="eyebrow">A LITTLE EXTRA SECURITY</p><h1>Password generator</h1><p class="muted">Create a unique, cryptographically strong password.</p></div></div>
-                    <section class="generator-card">
-                        <div class="generator-card-heading"><div class="summary-icon icon-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/></svg></div><div><h2>Your new password</h2><p class="muted">Generated securely in your browser using the Web Crypto API.</p></div></div>
-                        <div class="generated-output"><output id="generated-output" aria-live="polite">Choose a length and generate one</output><button id="copy-generated" class="icon-button" type="button" aria-label="Copy generated password" title="Copy password"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button></div>
-                        <label class="range-label" for="password-length"><span>Password length</span><strong><span id="length-value">20</span> characters</strong></label>
+                    <div class="page-heading">
+                        <div>
+                            <p class="eyebrow">A little extra security</p>
+                            <h1>Password generator</h1>
+                            <p class="muted">Create a unique, cryptographically strong password in your browser.</p>
+                        </div>
+                    </div>
+                    <section class="panel generator-card">
+                        <div class="generator-card-heading">
+                            <span class="metric-icon metric-icon-violet">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/></svg>
+                            </span>
+                            <div>
+                                <h2>Your new password</h2>
+                                <p class="muted">Generated with the Web Crypto API using unbiased random sampling.</p>
+                            </div>
+                        </div>
+                        <div class="generated-output">
+                            <output id="generated-output" aria-live="polite">Choose a length and generate one</output>
+                            <button id="copy-generated" class="icon-button" type="button" aria-label="Copy generated password" title="Copy password">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+                            </button>
+                        </div>
+                        <label class="range-label" for="password-length">
+                            <span>Password length</span>
+                            <strong><span id="length-value">20</span> characters</strong>
+                        </label>
                         <input id="password-length" class="length-range" type="range" min="8" max="64" value="20">
                         <div class="range-ends"><span>8</span><span>64</span></div>
-                        <div class="generator-actions"><button id="generate-button" class="button button-primary" type="button">Generate password <span>↻</span></button><button id="copy-generator-secondary" class="button button-secondary" type="button">Copy password</button></div>
-                        <p class="generator-note"><span>✳</span> Includes uppercase, lowercase, numbers, and symbols.</p>
+                        <div class="generator-actions">
+                            <button id="generate-button" class="button button-primary" type="button">Generate password</button>
+                            <button id="copy-generator-secondary" class="button button-secondary" type="button">Copy password</button>
+                        </div>
+                        <p class="generator-note">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5.6c0 4.6-3.2 8.3-8 9.9-4.8-1.6-8-5.3-8-9.9V6l8-3Z"/></svg>
+                            Always includes uppercase, lowercase, numbers, and symbols.
+                        </p>
+                    </section>
+                </section>
+
+                <!-- SECURITY CENTER -->
+                <section id="security-view" class="page-view hidden">
+                    <div class="page-heading">
+                        <div>
+                            <p class="eyebrow">Live analysis</p>
+                            <h1>Security center</h1>
+                            <p class="muted">Computed in this tab from your decrypted credentials — nothing is uploaded.</p>
+                        </div>
+                    </div>
+
+                    <section class="metric-grid security-metrics" aria-label="Security metrics">
+                        <article class="metric-card metric-green">
+                            <div class="metric-head">
+                                <span class="metric-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5.6c0 4.6-3.2 8.3-8 9.9-4.8-1.6-8-5.3-8-9.9V6l8-3Z"/><path d="m9 12 2.2 2.2L15.4 10"/></svg></span>
+                                <span class="metric-caption">Strong passwords</span>
+                            </div>
+                            <strong id="security-strong" class="metric-value">0</strong>
+                            <span id="security-strong-foot" class="metric-foot">16+ characters, mixed classes</span>
+                        </article>
+                        <article class="metric-card metric-amber">
+                            <div class="metric-head">
+                                <span class="metric-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18L12 4Z"/><path d="M12 10v4m0 3h.01"/></svg></span>
+                                <span class="metric-caption">Weak passwords</span>
+                            </div>
+                            <strong id="security-weak" class="metric-value">0</strong>
+                            <span class="metric-foot">Under 16 characters or low variety</span>
+                        </article>
+                        <article class="metric-card metric-violet">
+                            <div class="metric-head">
+                                <span class="metric-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></span>
+                                <span class="metric-caption">Reused passwords</span>
+                            </div>
+                            <strong id="security-reused" class="metric-value">0</strong>
+                            <span class="metric-foot">Same password used on several sites</span>
+                        </article>
+                        <article class="metric-card metric-blue">
+                            <div class="metric-head">
+                                <span class="metric-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/></svg></span>
+                                <span class="metric-caption">Last updated</span>
+                            </div>
+                            <strong id="security-updated" class="metric-value">—</strong>
+                            <span class="metric-foot">Most recent change in your vault</span>
+                        </article>
+                    </section>
+
+                    <section class="panel attention-panel">
+                        <div class="panel-heading">
+                            <div>
+                                <h2>Needs attention</h2>
+                                <p class="muted">Weak or reused credentials, ready to update.</p>
+                            </div>
+                            <span id="attention-count" class="panel-badge">0</span>
+                        </div>
+                        <div id="attention-list" class="attention-list"></div>
+                        <div id="attention-empty" class="empty-state hidden">
+                            <span class="empty-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg>
+                            </span>
+                            <h3>Nothing flagged</h3>
+                            <p>Every stored password is long, varied, and used on a single site.</p>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-heading">
+                            <div>
+                                <h2>How your vault is protected</h2>
+                                <p class="muted">Architecture facts for this installation.</p>
+                            </div>
+                        </div>
+                        <div class="protection-grid">
+                            <div class="protection-item">
+                                <span class="protection-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg></span>
+                                <div><strong>AES-256-GCM</strong><span>Authenticated encryption for every stored record.</span></div>
+                            </div>
+                            <div class="protection-item">
+                                <span class="protection-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg></span>
+                                <div><strong>PBKDF2 · 600k rounds</strong><span>Master password stretched before any key is derived.</span></div>
+                            </div>
+                            <div class="protection-item">
+                                <span class="protection-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
+                                <div><strong>30-minute session</strong><span>Unlocks expire automatically and keys are dropped.</span></div>
+                            </div>
+                            <div class="protection-item">
+                                <span class="protection-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3Z"/><path d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span>
+                                <div><strong>Local SQLite</strong><span>Ciphertext lives in one file on this machine.</span></div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- SETTINGS -->
+                <section id="settings-view" class="page-view hidden">
+                    <div class="page-heading">
+                        <div>
+                            <p class="eyebrow">Preferences</p>
+                            <h1>Settings</h1>
+                            <p class="muted">Tune how VaultPass behaves in this browser. Preferences never contain vault data.</p>
+                        </div>
+                    </div>
+
+                    <section class="panel settings-panel">
+                        <div class="panel-heading">
+                            <div>
+                                <h2>Generator defaults</h2>
+                                <p class="muted">Used by the password generator and the one-click generator in the credential form.</p>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <strong>Default password length</strong>
+                                <span>Applied whenever VaultPass generates a password for you.</span>
+                            </div>
+                            <label class="field-select">
+                                <span class="visually-hidden">Default password length</span>
+                                <select id="setting-length">
+                                    <option value="12">12 characters</option>
+                                    <option value="16">16 characters</option>
+                                    <option value="20">20 characters</option>
+                                    <option value="24">24 characters</option>
+                                    <option value="32">32 characters</option>
+                                    <option value="40">40 characters</option>
+                                </select>
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="panel settings-panel">
+                        <div class="panel-heading">
+                            <div>
+                                <h2>Privacy &amp; display</h2>
+                                <p class="muted">Control how secrets are revealed and how the vault is laid out.</p>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <strong>Auto-hide revealed passwords</strong>
+                                <span>Mask a revealed password again after the selected delay.</span>
+                            </div>
+                            <label class="field-select">
+                                <span class="visually-hidden">Auto-hide delay</span>
+                                <select id="setting-reveal-timeout">
+                                    <option value="0">Never</option>
+                                    <option value="15">After 15 seconds</option>
+                                    <option value="30">After 30 seconds</option>
+                                    <option value="60">After 60 seconds</option>
+                                </select>
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                            </label>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <strong>Credential density</strong>
+                                <span>Compact rows fit more records on screen.</span>
+                            </div>
+                            <label class="field-select">
+                                <span class="visually-hidden">Credential density</span>
+                                <select id="setting-density">
+                                    <option value="comfortable">Comfortable</option>
+                                    <option value="compact">Compact</option>
+                                </select>
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="panel settings-panel">
+                        <div class="panel-heading">
+                            <div>
+                                <h2>Session</h2>
+                                <p class="muted">VaultPass keeps your decryption key in memory only.</p>
+                            </div>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <strong>Current session</strong>
+                                <span>Expires automatically, clearing the in-memory encryption key.</span>
+                            </div>
+                            <span id="settings-session-timer" class="session-chip">--:--</span>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <strong>Lock the vault now</strong>
+                                <span>Ends this session and clears decrypted data from the tab.</span>
+                            </div>
+                            <button class="button button-secondary" type="button" data-lock-now>Lock vault</button>
+                        </div>
                     </section>
                 </section>
             </main>
-            <footer class="app-footer"><span>VaultPass <span class="footer-dot">·</span> Local-first password manager</span><span>Keep your master password safe. It cannot be recovered.</span></footer>
+
+            <footer class="app-footer">
+                <span>VaultPass <span class="footer-dot">·</span> Local-first password manager</span>
+                <span>Keep your master password safe. It cannot be recovered.</span>
+            </footer>
         </section>
     </div>
 
     <dialog id="credential-dialog" class="credential-dialog">
         <form id="credential-form" method="dialog" novalidate>
-            <div class="dialog-heading"><div><p class="eyebrow">YOUR PRIVATE COLLECTION</p><h2 id="dialog-title">Add a password</h2></div><button id="dialog-close" class="icon-button dialog-close" type="button" aria-label="Close dialog">×</button></div>
+            <div class="dialog-heading">
+                <div>
+                    <p class="eyebrow">Your private collection</p>
+                    <h2 id="dialog-title">Add a password</h2>
+                </div>
+                <button id="dialog-close" class="icon-button dialog-close" type="button" aria-label="Close dialog">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                </button>
+            </div>
             <label for="credential-website">Website or app <span class="required">*</span></label>
             <input id="credential-website" name="website" type="text" required maxlength="200" placeholder="e.g. example.com" autocomplete="url">
             <label for="credential-username">Username or email</label>
-            <div class="copy-input-wrap"><input id="credential-username" name="username" type="text" maxlength="200" placeholder="you@example.com" autocomplete="username"><button id="copy-form-username" class="icon-button small-copy" type="button" aria-label="Copy username" title="Copy username"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button></div>
+            <div class="copy-input-wrap">
+                <input id="credential-username" name="username" type="text" maxlength="200" placeholder="you@example.com" autocomplete="username">
+                <button id="copy-form-username" class="icon-button small-copy" type="button" aria-label="Copy username" title="Copy username">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+                </button>
+            </div>
             <label for="credential-password">Password <span class="required">*</span></label>
-            <div class="password-input-wrap"><input id="credential-password" name="password" type="password" required minlength="1" maxlength="4096" placeholder="Enter or generate a password" autocomplete="new-password"><button class="icon-button reveal-button" type="button" data-reveal="credential-password" aria-label="Show password"></button></div>
-            <div class="form-inline-action"><button id="form-generate" class="text-link" type="button">✳ Generate a strong password</button><button id="copy-form-password" class="text-link" type="button">Copy password</button></div>
+            <div class="password-input-wrap">
+                <input id="credential-password" name="password" type="password" required minlength="1" maxlength="4096" placeholder="Enter or generate a password" autocomplete="new-password">
+                <button class="icon-button reveal-button" type="button" data-reveal="credential-password" aria-label="Show password"></button>
+            </div>
+            <div class="form-inline-action">
+                <button id="form-generate" class="text-link" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/></svg>
+                    Generate a strong password
+                </button>
+                <button id="copy-form-password" class="text-link" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+                    Copy password
+                </button>
+            </div>
+            <label for="credential-category">Category</label>
+            <div class="copy-input-wrap">
+                <input id="credential-category" name="category" type="text" maxlength="60" list="category-suggestions" placeholder="e.g. Finance, Work, Social">
+                <datalist id="category-suggestions"></datalist>
+            </div>
             <label for="credential-notes">Notes <span class="optional">(optional)</span></label>
             <textarea id="credential-notes" name="notes" rows="3" maxlength="2000" placeholder="Add a note for this credential"></textarea>
             <p id="form-error" class="form-error hidden" role="alert"></p>
-            <div class="dialog-actions"><button id="cancel-dialog" class="button button-secondary" type="button">Cancel</button><button id="save-credential" class="button button-primary" type="submit">Save password</button></div>
+            <div class="dialog-actions">
+                <button id="cancel-dialog" class="button button-secondary" type="button">Cancel</button>
+                <button id="save-credential" class="button button-primary" type="submit">Save password</button>
+            </div>
         </form>
     </dialog>
 </body>

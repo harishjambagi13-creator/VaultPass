@@ -278,6 +278,8 @@ async def security_headers(request: Request, call_next):
     response.headers["Content-Security-Policy"] = csp
     if request.url.path.startswith("/api/") or request.url.path == "/":
         response.headers["Cache-Control"] = "no-store"
+    elif request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
     return response
 
 
@@ -359,7 +361,10 @@ def create_session(response: Response) -> dict[str, str]:
         samesite="strict",
         path="/",
     )
-    return {"csrf_token": csrf_token}
+    return {
+        "csrf_token": csrf_token,
+        "expires_at": str(int(time.time()) + SESSION_TTL_SECONDS),
+    }
 
 
 def create_login_challenge() -> tuple[str, bytes]:

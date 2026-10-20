@@ -13,12 +13,37 @@ It provides a modern dashboard for managing website credentials, generating stro
 - 🔑 **Master-password authentication** with a password-based key derivation process.
 - 🗄️ **Local SQLite database** for storing encrypted credential records.
 - 🛡️ **Challenge-response unlock flow** for authentication.
-- ⏱️ **Automatic session expiration** after 30 minutes.
+- ⏱️ **Automatic session expiration** after 30 minutes, with a live countdown.
 - 🔒 **Vault locking** that discards the browser's in-memory encryption key.
-- 🎲 **Cryptographically secure password generator**.
-- 🔎 **Credential search and management** through a web dashboard.
+- 🎲 **Cryptographically secure password generator** with configurable length.
+- 🔎 **Credential search, category filtering and sorting** through a web dashboard.
+- ⭐ **Favorites and categories** stored inside the encrypted record payload.
+- 🛡️ **Security center** that detects weak and reused passwords locally.
+- ⚙️ **Settings** for generator defaults, reveal timeout and list density.
 - 🛡️ **CSRF protection** for state-changing requests.
 - 🖥️ **Local-first architecture** without a requirement for a hosted backend.
+- 🎨 **Art-directed dashboard** built on a cinematic background render and a self-hosted type system.
+
+## 🎨 Dashboard design
+
+The dashboard (the Overview page) is a single FastAPI-served view built with a small, deliberately
+restrained design system:
+
+- **Cinematic backdrop** — `static/images/vaultpass-dashboard-bg.webp` (with a `.jpg` fallback) is a
+  generated midnight-navy render with abstract glass architecture, machined vault rings and blue/cyan
+  light. A layered scrim and a fine grain tile (`vaultpass-grain.png`) keep text legible on top of it.
+- **Glass surfaces** — panels use translucent fills, hairline borders and backdrop blur so the artwork
+  reads through the interface.
+- **Self-hosted Inter** — `static/fonts/` contains the variable Inter woff2 files, so typography works
+  offline and satisfies the strict `font-src 'self'` Content Security Policy.
+- **Iconography** — every icon is hand-written inline SVG; no icon font, no emoji, no CDN.
+- **Responsive** — the sidebar becomes a slide-in drawer under 900px, metric cards reflow, and the
+  credential table scrolls horizontally inside its own container.
+- **Accessible** — labelled controls, `aria-pressed` state on toggles, visible focus rings and
+  `prefers-reduced-motion` support.
+
+Measured results from the automated browser suite: zero console errors, zero CSP violations, no
+horizontal overflow at 390px or 1600px, and the credential table remains reachable at every breakpoint.
 
 ## 🛠️ Technology Stack
 
@@ -32,6 +57,7 @@ It provides a modern dashboard for managing website credentials, generating stro
 | HTML5 | Page structure |
 | CSS3 | Styling and responsive layout |
 | JavaScript | Frontend interactions |
+| Inter (self-hosted) | UI typography |
 | Web Crypto API | Browser-side cryptographic operations |
 | AES-256-GCM | Authenticated encryption |
 | PBKDF2-HMAC-SHA-256 | Master-password-based key derivation |
@@ -50,11 +76,19 @@ VaultPass/
 ├── .gitignore
 ├── static/
 │   ├── css/
-│   │   └── style.css
+│   │   └── style.css            # design system + dashboard layout
+│   ├── fonts/
+│   │   ├── inter-latin.woff2    # self-hosted Inter (variable 400–700)
+│   │   └── inter-latin-ext.woff2
+│   ├── images/
+│   │   ├── vaultpass-dashboard-bg.webp   # cinematic dashboard backdrop
+│   │   ├── vaultpass-dashboard-bg.jpg    # fallback for older engines
+│   │   ├── vaultpass-grain.png           # fine film-grain tile
+│   │   └── favicon.svg
 │   └── js/
-│       └── app.js
+│       └── app.js               # crypto, rendering and interactions
 └── templates/
-    └── index.html
+    └── index.html               # auth screen + dashboard shell
 ```
 
 The local SQLite database is created as `vaultpass.sqlite3` by default, unless `VAULTPASS_DB_PATH` specifies another location.
@@ -163,6 +197,21 @@ VaultPass is a local-development project, not a production-ready hosted password
 - The server cannot inspect credential fields because it intentionally receives encrypted records.
 
 **A working authentication flow does not guarantee that the complete system is secure. Review and test the cryptographic implementation before storing real credentials.**
+
+### Where favourites and categories live
+
+Favourite flags and category labels are written **inside the encrypted credential payload**, not into a
+separate column. The server still only ever stores opaque AES-GCM ciphertext, so the feature adds no
+plaintext metadata to the database and no extra schema. Records written by earlier versions decrypt
+normally and simply default to "not a favourite" and "no category".
+
+### What the dashboard never stores
+
+- Decrypted credentials, passwords, or vault keys are never written to `localStorage`.
+- Revealed passwords live in a JavaScript `Map` for the lifetime of the tab and are never placed in the
+  DOM, a `data-` attribute, or a URL.
+- The only persisted browser state is a small, non-sensitive preferences object
+  (`vaultpass.preferences.v1`) holding the generator length, reveal timeout and list density.
 ## Screenshots
 
 ### VaultPass Front Page
